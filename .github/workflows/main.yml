@@ -1,44 +1,42 @@
-name: Build xmrig for Windows
+on: push
 
-on:
-  push:
-    branches:
-      - main
+name: Build XMRig
 
 jobs:
-  build:
-    runs-on: windows-latest
-
+  build_win:
+    name: Windows build
+    runs-on: windows-2019
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@master
+      - name: Checkout dependencies
+        run: git clone https://github.com/xmrig/xmrig-deps.git
+      - name: Build project on Windows
+        run: |
+          cmake . -G "MinGW Makefiles" -DXMRIG_DEPS=xmrig-deps\gcc\x64
+          make -j2
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows_build
+          path: xmrig.exe
 
-      - name: Set up Visual Studio 2019
-        uses: microsoft/setup-msbuild@v1.0.2
-
+  build_linux:
+    name: Ubuntu build
+    runs-on: ubuntu-latest
+    steps:
       - name: Install dependencies
         run: |
-          choco install git
-          choco install cmake
-          choco install vcredist
-
-      - name: Install xmrig dependencies
+          sudo apt update
+          sudo apt install -y git build-essential cmake libuv1-dev libssl-dev libhwloc-dev
+      - name: Checkout code
+        uses: actions/checkout@master
+      - name: Build project on Ubuntu
         run: |
-          git submodule update --init --recursive
-          cmake -B build
-
-      - name: Build xmrig
-        run: |
-          cmake --build build --config Release
-
-      - name: Archive build artifacts
-        uses: actions/upload-artifact@v3
+          cmake .
+          make -j$(nproc)
+      - name: Upload Ubuntu build
+        uses: actions/upload-artifact@v4
         with:
-          name: xmrig-build
-          path: |
-            build/xmrig.exe
-            build/libxmrig.a
-            build/CMakeCache.txt
-            build/CMakeFiles/
-            build/Makefile
-
+          name: ubuntu_build
+          path: xmrig
