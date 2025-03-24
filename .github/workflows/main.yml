@@ -1,0 +1,44 @@
+name: Build xmrig for Windows
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Visual Studio 2019
+        uses: microsoft/setup-msbuild@v1.0.2
+
+      - name: Install dependencies
+        run: |
+          choco install git
+          choco install cmake
+          choco install vcredist
+
+      - name: Install xmrig dependencies
+        run: |
+          git submodule update --init --recursive
+          cmake -B build
+
+      - name: Build xmrig
+        run: |
+          cmake --build build --config Release
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: xmrig-build
+          path: |
+            build/xmrig.exe
+            build/libxmrig.a
+            build/CMakeCache.txt
+            build/CMakeFiles/
+            build/Makefile
+
